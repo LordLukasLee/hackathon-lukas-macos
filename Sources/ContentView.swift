@@ -8,6 +8,8 @@ struct ContentView: View {
     @State private var selectedIdea: ContentIdea?
     @State private var customTopic = ""
     @State private var tone: Tone = .professional
+    @State private var generateImages = false
+    @State private var imageStyle: ImageStyle = .photo
     @State private var isLoadingCompanies = true
     @State private var isLoadingIdeas = false
     @State private var isGenerating = false
@@ -212,32 +214,73 @@ struct ContentView: View {
                 }
 
                 Spacer()
+            }
+
+            // Image generation options
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle(isOn: $generateImages) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "photo.fill")
+                        Text("Generate AI Images")
+                    }
+                }
+                .toggleStyle(.checkbox)
+
+                if generateImages {
+                    HStack(spacing: 12) {
+                        Text("Style:")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Picker("Image Style", selection: $imageStyle) {
+                            ForEach(ImageStyle.allCases) { style in
+                                Text(style.displayName).tag(style)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 150)
+                        Text(imageStyle.description)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Text("⚠️ Image generation adds ~10-20 seconds per platform")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+            .padding(.vertical, 4)
+
+            HStack {
+                // Preview what will be generated
+                if let idea = selectedIdea {
+                    Text("Topic: \(idea.title)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if !customTopic.isEmpty {
+                    Text("Topic: \(customTopic)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
 
                 if isGenerating {
-                    ProgressView()
-                        .padding(.horizontal)
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text(generateImages ? "Generating content & images..." : "Generating...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
                     Button(action: generateContent) {
                         HStack {
                             Image(systemName: "sparkles")
-                            Text("Generate Posts")
+                            Text(generateImages ? "Generate Posts + Images" : "Generate Posts")
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                     }
                     .buttonStyle(.borderedProminent)
                 }
-            }
-
-            // Preview what will be generated
-            if let idea = selectedIdea {
-                Text("Topic: \(idea.title)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if !customTopic.isEmpty {
-                Text("Topic: \(customTopic)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -351,7 +394,9 @@ struct ContentView: View {
                 let requestBody = GenerateRequest(
                     companyId: company.id,
                     topic: topic,
-                    tone: tone
+                    tone: tone,
+                    generateImages: generateImages,
+                    imageStyle: imageStyle
                 )
                 request.httpBody = try JSONEncoder().encode(requestBody)
 

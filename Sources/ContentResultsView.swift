@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentResultsView: View {
     let content: GeneratedContent
@@ -100,8 +101,56 @@ struct PlatformCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(nil)
 
-            // Image Suggestion Section
-            if !content.imageSuggestion.isEmpty {
+            // Generated Image or Image Suggestion Section
+            if let imageUrl = content.imageUrl, let url = URL(string: imageUrl) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "photo.fill")
+                        Text("Generated Image")
+                        Spacer()
+                        Button(action: { saveImage(from: url) }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: imageCopied ? "checkmark" : "square.and.arrow.down")
+                                Text(imageCopied ? "Saved!" : "Save")
+                            }
+                            .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(imageCopied ? .green : nil)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.green)
+
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .frame(height: 150)
+                                Spacer()
+                            }
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 200)
+                                .cornerRadius(8)
+                        case .failure:
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle")
+                                Text("Failed to load image")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .frame(height: 100)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+            } else if !content.imageSuggestion.isEmpty {
                 DisclosureGroup(isExpanded: $showImageSuggestion) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(content.imageSuggestion)
@@ -182,6 +231,36 @@ struct PlatformCard: View {
             imageCopied = false
         }
     }
+
+    private func saveImage(from url: URL) {
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let image = NSImage(data: data) else { return }
+
+                let savePanel = NSSavePanel()
+                savePanel.allowedContentTypes = [.png, .jpeg]
+                savePanel.nameFieldStringValue = "\(platform.lowercased())_image.png"
+
+                if savePanel.runModal() == .OK, let saveUrl = savePanel.url {
+                    if let tiffData = image.tiffRepresentation,
+                       let bitmapRep = NSBitmapImageRep(data: tiffData),
+                       let pngData = bitmapRep.representation(using: .png, properties: [:])
+                    {
+                        try pngData.write(to: saveUrl)
+                        await MainActor.run {
+                            imageCopied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                imageCopied = false
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("Error saving image: \(error)")
+            }
+        }
+    }
 }
 
 #Preview {
@@ -193,25 +272,33 @@ struct PlatformCard: View {
                 content: "Just launched something amazing! Check it out.",
                 hashtags: ["launch", "tech"],
                 charCount: 45,
-                imageSuggestion: "Modern retail store with self-checkout kiosks, bright lighting"
+                imageSuggestion: "Modern retail store with self-checkout kiosks, bright lighting",
+                imageUrl: nil,
+                imageStyle: "photo"
             ),
             linkedin: PlatformContent(
                 content: "Excited to announce our latest innovation.",
                 hashtags: ["innovation", "business"],
                 charCount: 50,
-                imageSuggestion: "Professional infographic showing checkout time reduction"
+                imageSuggestion: "Professional infographic showing checkout time reduction",
+                imageUrl: nil,
+                imageStyle: "photo"
             ),
             twitter: PlatformContent(
                 content: "Big news! We just launched.",
                 hashtags: ["launch"],
                 charCount: 28,
-                imageSuggestion: "Eye-catching stat card with key metric"
+                imageSuggestion: "Eye-catching stat card with key metric",
+                imageUrl: nil,
+                imageStyle: "photo"
             ),
             tiktok: PlatformContent(
                 content: "POV: You just discovered something cool",
                 hashtags: ["fyp", "tech"],
                 charCount: 40,
-                imageSuggestion: "Person reacting to fast checkout experience"
+                imageSuggestion: "Person reacting to fast checkout experience",
+                imageUrl: nil,
+                imageStyle: "photo"
             )
         ),
         onGenerateNew: {}
