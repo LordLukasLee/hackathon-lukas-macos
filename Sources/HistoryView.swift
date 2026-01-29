@@ -17,26 +17,28 @@ struct HistoryView: View {
                         historyManager.clearAll()
                     }
                     .buttonStyle(.bordered)
+                    .help("Remove all history entries")
                 }
                 Button("Close") {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .accessibilityLabel("Close history")
             }
-            .padding()
+            .padding(Theme.Spacing.lg)
             .background(.bar)
 
             Divider()
 
             if historyManager.entries.isEmpty {
-                VStack(spacing: 12) {
+                VStack(spacing: Theme.Spacing.md) {
                     Image(systemName: "clock")
                         .font(.largeTitle)
                         .foregroundStyle(.secondary)
                     Text("No history yet")
                         .font(.headline)
                     Text("Generated content will appear here")
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -70,20 +72,20 @@ struct HistoryRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 HStack {
                     Text(entry.company)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
+                        .font(.footnote)
+                        .padding(.horizontal, Theme.Spacing.sm)
                         .padding(.vertical, 2)
                         .background(Color.accentColor.opacity(0.1))
-                        .cornerRadius(4)
+                        .cornerRadius(Theme.Radius.sm)
                     Text(entry.tone.capitalized)
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text(formattedDate)
-                        .font(.caption)
+                        .font(.footnote)
                         .foregroundStyle(.tertiary)
                 }
                 Text(entry.topic)
@@ -97,14 +99,17 @@ struct HistoryRow: View {
                 onSelect()
             }
             .buttonStyle(.bordered)
+            .help("View this generated content")
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.red)
+            .accessibilityLabel("Delete history entry")
+            .help("Delete this entry")
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Theme.Spacing.xs)
     }
 }
 

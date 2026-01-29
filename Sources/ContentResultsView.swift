@@ -18,9 +18,9 @@ struct ContentResultsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: Theme.Spacing.lg) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                     HStack {
                         Text("Generated Content")
                             .font(.title2.bold())
@@ -30,27 +30,28 @@ struct ContentResultsView: View {
                             onGenerateNew()
                         }
                         .buttonStyle(.bordered)
+                        .help("Create new content")
                     }
                     HStack {
                         Text(content.company)
                             .font(.subheadline)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, Theme.Spacing.sm)
+                            .padding(.vertical, Theme.Spacing.xs)
                             .background(Color.accentColor.opacity(0.15))
-                            .cornerRadius(4)
+                            .cornerRadius(Theme.Radius.sm)
                         Text(content.topic)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, Theme.Spacing.lg)
 
                 // Variation tabs (only show if multiple variations)
                 if variationCount > 1 {
                     HStack(spacing: 0) {
                         ForEach(0..<variationCount, id: \.self) { index in
                             Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(Theme.Animation.standard) {
                                     selectedVariation = index
                                 }
                             }) {
@@ -61,12 +62,13 @@ struct ContentResultsView: View {
                                     .foregroundStyle(selectedVariation == index ? .white : .primary)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Variation \(variationLabels[index])")
                         }
                     }
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                    .animation(.easeInOut(duration: 0.2), value: selectedVariation)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(Theme.Radius.md)
+                    .padding(.horizontal, Theme.Spacing.lg)
+                    .animation(Theme.Animation.standard, value: selectedVariation)
                 }
 
                 // Content grid
@@ -74,15 +76,11 @@ struct ContentResultsView: View {
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 20)
             }
-            .padding(.vertical)
-            .padding(.horizontal, 8)
-            .background(Color(nsColor: .windowBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .padding(16)
-            .animation(.easeInOut(duration: 0.2), value: selectedVariation)
+            .padding(.vertical, Theme.Spacing.lg)
+            .animation(Theme.Animation.standard, value: selectedVariation)
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.4)) {
+            withAnimation(Theme.Animation.smooth) {
                 appeared = true
             }
         }
@@ -90,32 +88,32 @@ struct ContentResultsView: View {
 
     private var cardView: some View {
         LazyVGrid(columns: [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
-        ], spacing: 16) {
+            GridItem(.flexible(), spacing: Theme.Spacing.lg),
+            GridItem(.flexible(), spacing: Theme.Spacing.lg)
+        ], spacing: Theme.Spacing.lg) {
             PlatformCard(
                 platform: "Instagram",
                 icon: "camera.fill",
-                color: .pink,
+                color: Theme.Platform.instagram,
                 content: content.instagram[safe: selectedVariation] ?? content.instagram[0]
             )
 
             PlatformCard(
                 platform: "LinkedIn",
                 icon: "briefcase.fill",
-                color: .blue,
+                color: Theme.Platform.linkedin,
                 content: content.linkedin[safe: selectedVariation] ?? content.linkedin[0]
             )
 
             PlatformCard(
                 platform: "Twitter/X",
                 icon: "bubble.left.fill",
-                color: .cyan,
+                color: Theme.Platform.twitter,
                 content: content.twitter[safe: selectedVariation] ?? content.twitter[0],
                 showCharWarning: true
             )
         }
-        .padding(.horizontal)
+        .padding(.horizontal, Theme.Spacing.lg)
     }
 
 }
@@ -141,7 +139,7 @@ struct PlatformCard: View {
     @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             HStack {
                 Image(systemName: icon)
                     .foregroundStyle(color)
@@ -160,23 +158,24 @@ struct PlatformCard: View {
 
             // Generated Image Section
             if let imageUrl = content.imageUrl, let url = URL(string: imageUrl) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 4) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                    HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: "photo.fill")
                         Text("Generated Image")
                         Spacer()
                         Button(action: { saveImage(from: url) }) {
-                            HStack(spacing: 4) {
+                            HStack(spacing: Theme.Spacing.xs) {
                                 Image(systemName: imageSaved ? "checkmark" : "square.and.arrow.down")
                                 Text(imageSaved ? "Saved!" : "Save")
                             }
-                            .font(.caption)
+                            .font(.footnote)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .tint(imageSaved ? .green : nil)
+                        .accessibilityLabel(imageSaved ? "Image saved" : "Save image")
                     }
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.green)
 
                     AsyncImage(url: url) { phase in
@@ -193,13 +192,13 @@ struct PlatformCard: View {
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(maxHeight: 200)
-                                .cornerRadius(8)
+                                .cornerRadius(Theme.Radius.md)
                         case .failure:
                             HStack {
                                 Image(systemName: "exclamationmark.triangle")
                                 Text("Failed to load image")
                             }
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(.red)
                             .frame(height: 100)
                         @unknown default:
@@ -212,29 +211,29 @@ struct PlatformCard: View {
             // Always show image suggestion when available (for copying to external image generators)
             if !content.imageSuggestion.isEmpty {
                 DisclosureGroup(isExpanded: $showImageSuggestion) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                         Text(content.imageSuggestion)
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                         Button(action: copyImageSuggestion) {
-                            HStack(spacing: 4) {
+                            HStack(spacing: Theme.Spacing.xs) {
                                 Image(systemName: promptCopied ? "checkmark" : "photo")
                                 Text(promptCopied ? "Copied!" : "Copy for AI image generator")
                             }
-                            .font(.caption)
+                            .font(.footnote)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .tint(promptCopied ? .green : .orange)
                     }
-                    .padding(.top, 4)
+                    .padding(.top, Theme.Spacing.xs)
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: "photo.fill")
                         Text("Image Prompt")
                     }
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.orange)
                 }
             }
@@ -243,41 +242,48 @@ struct PlatformCard: View {
 
             HStack {
                 Button(action: copyToClipboard) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Theme.Spacing.xs) {
                         Image(systemName: copied ? "checkmark" : "doc.on.doc")
                         Text(copied ? "Copied!" : "Copy")
                     }
                 }
                 .buttonStyle(.bordered)
                 .tint(copied ? .green : nil)
+                .accessibilityLabel(copied ? "Content copied" : "Copy content to clipboard")
 
                 Spacer()
             }
         }
-        .padding()
+        .padding(Theme.Spacing.lg)
         .background(Color(nsColor: .controlBackgroundColor))
-        .cornerRadius(12)
+        .cornerRadius(Theme.Radius.lg)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: Theme.Radius.lg)
                 .stroke(color.opacity(isHovered ? 0.5 : 0.3), lineWidth: isHovered ? 2 : 1)
         )
-        .shadow(color: .black.opacity(isHovered ? 0.15 : 0.08), radius: isHovered ? 12 : 8, y: isHovered ? 6 : 4)
+        .shadow(
+            color: isHovered ? Theme.Shadow.hover.color : Theme.Shadow.subtle.color,
+            radius: isHovered ? Theme.Shadow.hover.radius : Theme.Shadow.subtle.radius,
+            y: isHovered ? Theme.Shadow.hover.y : Theme.Shadow.subtle.y
+        )
         .scaleEffect(isHovered ? 1.01 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .animation(Theme.Animation.standard, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
         }
+        .accessibilityLabel("\(platform) content card")
     }
 
     private var charCountBadge: some View {
         let isOverLimit = showCharWarning && content.charCount > 280
         return Text("\(content.charCount) chars")
-            .font(.caption)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .font(.footnote)
+            .padding(.horizontal, Theme.Spacing.sm)
+            .padding(.vertical, Theme.Spacing.xs)
             .background(isOverLimit ? Color.red.opacity(0.2) : Color.secondary.opacity(0.1))
             .foregroundStyle(isOverLimit ? .red : .secondary)
-            .cornerRadius(6)
+            .cornerRadius(Theme.Radius.sm)
+            .accessibilityLabel("\(content.charCount) characters\(isOverLimit ? ", over Twitter limit" : "")")
     }
 
     private func copyToClipboard() {
