@@ -12,6 +12,7 @@ struct ContentResultsView: View {
 
     @State private var selectedVariation = 0
     @State private var viewMode: ViewMode = .card
+    @State private var appeared = false
 
     private var variationCount: Int {
         content.instagram.count
@@ -63,7 +64,11 @@ struct ContentResultsView: View {
                 if variationCount > 1 {
                     HStack(spacing: 0) {
                         ForEach(0..<variationCount, id: \.self) { index in
-                            Button(action: { selectedVariation = index }) {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedVariation = index
+                                }
+                            }) {
                                 Text(variationLabels[index])
                                     .font(.headline)
                                     .frame(width: 50, height: 36)
@@ -76,16 +81,27 @@ struct ContentResultsView: View {
                     .background(Color.secondary.opacity(0.1))
                     .cornerRadius(8)
                     .padding(.horizontal)
+                    .animation(.easeInOut(duration: 0.2), value: selectedVariation)
                 }
 
                 // Content grid
                 if viewMode == .card {
                     cardView
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : 20)
                 } else {
                     previewView
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : 20)
                 }
             }
             .padding(.vertical)
+            .animation(.easeInOut(duration: 0.2), value: selectedVariation)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.4)) {
+                appeared = true
+            }
         }
     }
 
@@ -161,6 +177,7 @@ struct PlatformCard: View {
     @State private var imageSaved = false
     @State private var promptCopied = false
     @State private var showImageSuggestion = false
+    @State private var isHovered = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -281,8 +298,14 @@ struct PlatformCard: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(color.opacity(0.3), lineWidth: 1)
+                .stroke(color.opacity(isHovered ? 0.5 : 0.3), lineWidth: isHovered ? 2 : 1)
         )
+        .shadow(color: .black.opacity(isHovered ? 0.15 : 0.08), radius: isHovered ? 12 : 8, y: isHovered ? 6 : 4)
+        .scaleEffect(isHovered ? 1.01 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 
     private var charCountBadge: some View {

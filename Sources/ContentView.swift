@@ -26,7 +26,9 @@ struct ContentView: View {
             header
             Divider()
 
-            if let content = generatedContent {
+            if isGenerating {
+                SkeletonLoadingView(generateImages: generateImages)
+            } else if let content = generatedContent {
                 ContentResultsView(content: content) {
                     generatedContent = nil
                     selectedIdea = nil
@@ -201,29 +203,38 @@ struct ContentView: View {
             Label("Step 3: Generate Content", systemImage: "wand.and.stars")
                 .font(.headline)
 
-            HStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 32) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("Tone")
                         .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     Picker("Tone", selection: $tone) {
                         ForEach(Tone.allCases) { t in
                             Text(t.displayName).tag(t)
                         }
                     }
                     .pickerStyle(.segmented)
+                    .labelsHidden()
                     .frame(width: 250)
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("A/B Variations")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Variations")
                         .font(.subheadline)
-                    Picker("Variations", selection: $variations) {
-                        Text("1").tag(1)
-                        Text("2").tag(2)
-                        Text("3").tag(3)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 0) {
+                        ForEach([1, 2, 3], id: \.self) { num in
+                            Button(action: { variations = num }) {
+                                Text("\(num)")
+                                    .font(.subheadline.weight(.medium))
+                                    .frame(width: 36, height: 24)
+                                    .background(variations == num ? Color.accentColor : Color.secondary.opacity(0.15))
+                                    .foregroundStyle(variations == num ? .white : .primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 120)
+                    .cornerRadius(6)
                 }
 
                 Spacer()
@@ -289,10 +300,21 @@ struct ContentView: View {
                             Image(systemName: "sparkles")
                             Text(generateImages ? "Generate Posts + Images" : "Generate Posts")
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.accentColor, Color.accentColor.opacity(0.8), Color.purple.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(10)
+                        .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -508,6 +530,116 @@ struct IdeaCard: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Skeleton Loading View
+
+struct SkeletonLoadingView: View {
+    let generateImages: Bool
+    @State private var isAnimating = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                // Header skeleton
+                HStack {
+                    Text("Generating Content...")
+                        .font(.title2.bold())
+                    Spacer()
+                    ProgressView()
+                }
+                .padding(.horizontal)
+
+                // Info text
+                Text(generateImages ? "Creating posts and generating images..." : "Creating platform-specific posts...")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+
+                // Skeleton cards grid
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 16),
+                    GridItem(.flexible(), spacing: 16)
+                ], spacing: 16) {
+                    SkeletonCard(platform: "Instagram", icon: "camera.fill", color: .pink)
+                    SkeletonCard(platform: "LinkedIn", icon: "briefcase.fill", color: .blue)
+                    SkeletonCard(platform: "Twitter/X", icon: "bubble.left.fill", color: .cyan)
+                }
+                .padding(.horizontal)
+            }
+            .padding(.vertical)
+        }
+    }
+}
+
+struct SkeletonCard: View {
+    let platform: String
+    let icon: String
+    let color: Color
+    @State private var isAnimating = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                Text(platform)
+                    .font(.headline)
+                Spacer()
+            }
+
+            // Skeleton lines
+            VStack(alignment: .leading, spacing: 8) {
+                SkeletonLine(width: 1.0)
+                SkeletonLine(width: 0.9)
+                SkeletonLine(width: 0.75)
+                SkeletonLine(width: 0.6)
+            }
+
+            Divider()
+
+            // Button skeleton
+            SkeletonLine(width: 0.25)
+                .frame(height: 28)
+        }
+        .padding()
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+    }
+}
+
+struct SkeletonLine: View {
+    let width: CGFloat
+    @State private var isAnimating = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color.secondary.opacity(0.1),
+                        Color.secondary.opacity(0.2),
+                        Color.secondary.opacity(0.1)
+                    ],
+                    startPoint: isAnimating ? .leading : .trailing,
+                    endPoint: isAnimating ? .trailing : .leading
+                )
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 14)
+            .scaleEffect(x: width, anchor: .leading)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                    isAnimating = true
+                }
+            }
     }
 }
 
