@@ -2,6 +2,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentResultsView: View {
+    @EnvironmentObject var scheduleManager: ScheduleManager
+
     let content: GeneratedContent
     let onGenerateNew: () -> Void
 
@@ -92,26 +94,29 @@ struct ContentResultsView: View {
             GridItem(.flexible(), spacing: Theme.Spacing.lg)
         ], spacing: Theme.Spacing.lg) {
             PlatformCard(
-                platform: "Instagram",
-                icon: "camera.fill",
-                color: Theme.Platform.instagram,
-                content: content.instagram[safe: selectedVariation] ?? content.instagram[0]
+                platform: .instagram,
+                content: content.instagram[safe: selectedVariation] ?? content.instagram[0],
+                company: content.company,
+                topic: content.topic
             )
+            .environmentObject(scheduleManager)
 
             PlatformCard(
-                platform: "LinkedIn",
-                icon: "briefcase.fill",
-                color: Theme.Platform.linkedin,
-                content: content.linkedin[safe: selectedVariation] ?? content.linkedin[0]
+                platform: .linkedin,
+                content: content.linkedin[safe: selectedVariation] ?? content.linkedin[0],
+                company: content.company,
+                topic: content.topic
             )
+            .environmentObject(scheduleManager)
 
             PlatformCard(
-                platform: "Twitter/X",
-                icon: "bubble.left.fill",
-                color: Theme.Platform.twitter,
+                platform: .twitter,
                 content: content.twitter[safe: selectedVariation] ?? content.twitter[0],
+                company: content.company,
+                topic: content.topic,
                 showCharWarning: true
             )
+            .environmentObject(scheduleManager)
         }
         .padding(.horizontal, Theme.Spacing.lg)
     }
@@ -126,10 +131,12 @@ extension Array {
 }
 
 struct PlatformCard: View {
-    let platform: String
-    let icon: String
-    let color: Color
+    @EnvironmentObject var scheduleManager: ScheduleManager
+
+    let platform: Platform
     let content: PlatformContent
+    let company: String
+    let topic: String
     var showCharWarning: Bool = false
 
     @State private var copied = false
@@ -137,13 +144,14 @@ struct PlatformCard: View {
     @State private var promptCopied = false
     @State private var showImageSuggestion = false
     @State private var isHovered = false
+    @State private var showScheduleSheet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.md) {
             HStack {
-                Image(systemName: icon)
-                    .foregroundStyle(color)
-                Text(platform)
+                Image(systemName: platform.icon)
+                    .foregroundStyle(platform.color)
+                Text(platform.displayName)
                     .font(.headline)
                 Spacer()
                 charCountBadge
@@ -251,6 +259,16 @@ struct PlatformCard: View {
                 .tint(copied ? .green : nil)
                 .accessibilityLabel(copied ? "Content copied" : "Copy content to clipboard")
 
+                Button(action: { showScheduleSheet = true }) {
+                    HStack(spacing: Theme.Spacing.xs) {
+                        Image(systemName: "calendar.badge.plus")
+                        Text("Schedule")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .tint(.orange)
+                .accessibilityLabel("Schedule post")
+
                 Spacer()
             }
         }
@@ -259,7 +277,7 @@ struct PlatformCard: View {
         .cornerRadius(Theme.Radius.lg)
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Radius.lg)
-                .stroke(color.opacity(isHovered ? 0.5 : 0.3), lineWidth: isHovered ? 2 : 1)
+                .stroke(platform.color.opacity(isHovered ? 0.5 : 0.3), lineWidth: isHovered ? 2 : 1)
         )
         .shadow(
             color: isHovered ? Theme.Shadow.hover.color : Theme.Shadow.subtle.color,
@@ -271,7 +289,16 @@ struct PlatformCard: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .accessibilityLabel("\(platform) content card")
+        .accessibilityLabel("\(platform.displayName) content card")
+        .sheet(isPresented: $showScheduleSheet) {
+            SchedulePostSheet(
+                platform: platform,
+                content: content,
+                company: company,
+                topic: topic
+            )
+            .environmentObject(scheduleManager)
+        }
     }
 
     private var charCountBadge: some View {
@@ -312,7 +339,7 @@ struct PlatformCard: View {
 
                 let savePanel = NSSavePanel()
                 savePanel.allowedContentTypes = [.png, .jpeg]
-                savePanel.nameFieldStringValue = "\(platform.lowercased())_image.png"
+                savePanel.nameFieldStringValue = "\(platform.rawValue)_image.png"
 
                 if savePanel.runModal() == .OK, let saveUrl = savePanel.url {
                     if let tiffData = image.tiffRepresentation,
@@ -336,8 +363,7 @@ struct PlatformCard: View {
 }
 
 #Preview {
-    ContentResultsView(
-        content: GeneratedContent(
+    ContentResultsView(content: GeneratedContent(
             company: "Phygrid",
             topic: "New self-checkout feature",
             instagram: [
@@ -397,5 +423,6 @@ struct PlatformCard: View {
         ),
         onGenerateNew: {}
     )
+    .environmentObject(ScheduleManager())
     .frame(width: 800, height: 600)
 }

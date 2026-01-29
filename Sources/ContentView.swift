@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var historyManager: HistoryManager
+    @EnvironmentObject var scheduleManager: ScheduleManager
     @State private var companies: [Company] = []
     @State private var selectedCompany: Company?
     @State private var ideas: [ContentIdea] = []
@@ -18,6 +19,7 @@ struct ContentView: View {
     @State private var errorMessage: String?
     @State private var generatedContent: GeneratedContent?
     @State private var showHistory = false
+    @State private var showCalendar = false
 
     private let baseURL = "http://localhost:8000"
 
@@ -34,6 +36,7 @@ struct ContentView: View {
                     selectedIdea = nil
                     customTopic = ""
                 }
+                .environmentObject(scheduleManager)
             } else if let error = errorMessage {
                 errorView(error)
             } else if isLoadingCompanies {
@@ -52,6 +55,10 @@ struct ContentView: View {
             })
             .environmentObject(historyManager)
         }
+        .sheet(isPresented: $showCalendar) {
+            CalendarView()
+                .environmentObject(scheduleManager)
+        }
     }
 
     private var header: some View {
@@ -59,6 +66,21 @@ struct ContentView: View {
             Text("Social Content Generator")
                 .font(.largeTitle.bold())
             Spacer()
+
+            Button(action: { showCalendar.toggle() }) {
+                HStack(spacing: Theme.Spacing.xs) {
+                    Image(systemName: "calendar")
+                    Text("Calendar")
+                    if !scheduleManager.posts.isEmpty {
+                        Text("(\(scheduleManager.posts.filter { !$0.isPosted }.count))")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(.orange)
+            .accessibilityLabel("View scheduled posts calendar")
+            .help("View and manage scheduled posts")
 
             Button(action: { showHistory.toggle() }) {
                 HStack(spacing: Theme.Spacing.xs) {

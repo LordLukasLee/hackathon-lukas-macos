@@ -1,4 +1,71 @@
 import Foundation
+import SwiftUI
+
+// MARK: - Platform
+
+enum Platform: String, Codable, CaseIterable, Identifiable {
+    case instagram
+    case linkedin
+    case twitter
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .instagram: return "Instagram"
+        case .linkedin: return "LinkedIn"
+        case .twitter: return "Twitter/X"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .instagram: return "camera.fill"
+        case .linkedin: return "briefcase.fill"
+        case .twitter: return "bubble.left.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .instagram: return .pink
+        case .linkedin: return .blue
+        case .twitter: return .cyan
+        }
+    }
+}
+
+// MARK: - Scheduled Post
+
+struct ScheduledPost: Codable, Identifiable {
+    let id: UUID
+    let platform: Platform
+    let content: PlatformContent
+    let scheduledDate: Date
+    let company: String
+    let topic: String
+    var isPosted: Bool
+    let createdAt: Date
+    let notificationId: String
+
+    init(
+        platform: Platform,
+        content: PlatformContent,
+        scheduledDate: Date,
+        company: String,
+        topic: String
+    ) {
+        self.id = UUID()
+        self.platform = platform
+        self.content = content
+        self.scheduledDate = scheduledDate
+        self.company = company
+        self.topic = topic
+        self.isPosted = false
+        self.createdAt = Date()
+        self.notificationId = UUID().uuidString
+    }
+}
 
 // MARK: - Company Models
 
