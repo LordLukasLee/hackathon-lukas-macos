@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var tone: Tone = .professional
     @State private var generateImages = false
     @State private var imageStyle: ImageStyle = .photo
+    @State private var variations = 1
     @State private var isLoadingCompanies = true
     @State private var isLoadingIdeas = false
     @State private var isGenerating = false
@@ -213,6 +214,18 @@ struct ContentView: View {
                     .frame(width: 250)
                 }
 
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("A/B Variations")
+                        .font(.subheadline)
+                    Picker("Variations", selection: $variations) {
+                        Text("1").tag(1)
+                        Text("2").tag(2)
+                        Text("3").tag(3)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 120)
+                }
+
                 Spacer()
             }
 
@@ -396,7 +409,8 @@ struct ContentView: View {
                     topic: topic,
                     tone: tone,
                     generateImages: generateImages,
-                    imageStyle: imageStyle
+                    imageStyle: imageStyle,
+                    variations: variations
                 )
                 request.httpBody = try JSONEncoder().encode(requestBody)
 

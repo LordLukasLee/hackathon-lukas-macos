@@ -30,6 +30,7 @@ struct GenerateRequest: Codable {
     let tone: String
     let generateImages: Bool
     let imageStyle: String
+    let variations: Int
 
     enum CodingKeys: String, CodingKey {
         case companyId = "company_id"
@@ -37,6 +38,7 @@ struct GenerateRequest: Codable {
         case tone
         case generateImages = "generate_images"
         case imageStyle = "image_style"
+        case variations
     }
 
     init(
@@ -44,13 +46,15 @@ struct GenerateRequest: Codable {
         topic: String,
         tone: Tone = .professional,
         generateImages: Bool = false,
-        imageStyle: ImageStyle = .photo
+        imageStyle: ImageStyle = .photo,
+        variations: Int = 1
     ) {
         self.companyId = companyId
         self.topic = topic
         self.tone = tone.rawValue
         self.generateImages = generateImages
         self.imageStyle = imageStyle.rawValue
+        self.variations = variations
     }
 }
 
@@ -121,9 +125,9 @@ struct PlatformContent: Codable {
 struct GeneratedContent: Codable {
     let company: String
     let topic: String
-    let instagram: PlatformContent
-    let linkedin: PlatformContent
-    let twitter: PlatformContent
+    let instagram: [PlatformContent]  // List of variations
+    let linkedin: [PlatformContent]
+    let twitter: [PlatformContent]
 }
 
 // MARK: - History

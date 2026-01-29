@@ -1,18 +1,45 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum ViewMode: String, CaseIterable {
+    case card = "Card"
+    case preview = "Preview"
+}
+
 struct ContentResultsView: View {
     let content: GeneratedContent
     let onGenerateNew: () -> Void
 
+    @State private var selectedVariation = 0
+    @State private var viewMode: ViewMode = .card
+
+    private var variationCount: Int {
+        content.instagram.count
+    }
+
+    private var variationLabels: [String] {
+        ["A", "B", "C"].prefix(variationCount).map { String($0) }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                // Header
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Generated Content")
                             .font(.title2.bold())
                         Spacer()
+
+                        // View mode toggle
+                        Picker("View", selection: $viewMode) {
+                            ForEach(ViewMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 150)
+
                         Button("Generate New") {
                             onGenerateNew()
                         }
@@ -32,36 +59,94 @@ struct ContentResultsView: View {
                 }
                 .padding(.horizontal)
 
-                LazyVGrid(columns: [
-                    GridItem(.flexible(), spacing: 16),
-                    GridItem(.flexible(), spacing: 16)
-                ], spacing: 16) {
-                    PlatformCard(
-                        platform: "Instagram",
-                        icon: "camera.fill",
-                        color: .pink,
-                        content: content.instagram
-                    )
-
-                    PlatformCard(
-                        platform: "LinkedIn",
-                        icon: "briefcase.fill",
-                        color: .blue,
-                        content: content.linkedin
-                    )
-
-                    PlatformCard(
-                        platform: "Twitter/X",
-                        icon: "bubble.left.fill",
-                        color: .cyan,
-                        content: content.twitter,
-                        showCharWarning: true
-                    )
+                // Variation tabs (only show if multiple variations)
+                if variationCount > 1 {
+                    HStack(spacing: 0) {
+                        ForEach(0..<variationCount, id: \.self) { index in
+                            Button(action: { selectedVariation = index }) {
+                                Text(variationLabels[index])
+                                    .font(.headline)
+                                    .frame(width: 50, height: 36)
+                                    .background(selectedVariation == index ? Color.accentColor : Color.clear)
+                                    .foregroundStyle(selectedVariation == index ? .white : .primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
+
+                // Content grid
+                if viewMode == .card {
+                    cardView
+                } else {
+                    previewView
+                }
             }
             .padding(.vertical)
         }
+    }
+
+    private var cardView: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible(), spacing: 16),
+            GridItem(.flexible(), spacing: 16)
+        ], spacing: 16) {
+            PlatformCard(
+                platform: "Instagram",
+                icon: "camera.fill",
+                color: .pink,
+                content: content.instagram[safe: selectedVariation] ?? content.instagram[0]
+            )
+
+            PlatformCard(
+                platform: "LinkedIn",
+                icon: "briefcase.fill",
+                color: .blue,
+                content: content.linkedin[safe: selectedVariation] ?? content.linkedin[0]
+            )
+
+            PlatformCard(
+                platform: "Twitter/X",
+                icon: "bubble.left.fill",
+                color: .cyan,
+                content: content.twitter[safe: selectedVariation] ?? content.twitter[0],
+                showCharWarning: true
+            )
+        }
+        .padding(.horizontal)
+    }
+
+    private var previewView: some View {
+        VStack(spacing: 24) {
+            // Instagram Preview
+            InstagramPreview(
+                content: content.instagram[safe: selectedVariation] ?? content.instagram[0],
+                companyName: content.company
+            )
+
+            // LinkedIn Preview
+            LinkedInPreview(
+                content: content.linkedin[safe: selectedVariation] ?? content.linkedin[0],
+                companyName: content.company
+            )
+
+            // Twitter Preview
+            TwitterPreview(
+                content: content.twitter[safe: selectedVariation] ?? content.twitter[0],
+                companyName: content.company
+            )
+        }
+        .padding(.horizontal)
+    }
+}
+
+// Safe array access
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 
@@ -265,30 +350,60 @@ struct PlatformCard: View {
         content: GeneratedContent(
             company: "Phygrid",
             topic: "New self-checkout feature",
-            instagram: PlatformContent(
-                content: "Just launched something amazing! Check it out.",
-                hashtags: ["launch", "tech"],
-                charCount: 45,
-                imageSuggestion: "Modern retail store with self-checkout kiosks, bright lighting",
-                imageUrl: nil,
-                imageStyle: "photo"
-            ),
-            linkedin: PlatformContent(
-                content: "Excited to announce our latest innovation.",
-                hashtags: ["innovation", "business"],
-                charCount: 50,
-                imageSuggestion: "Professional infographic showing checkout time reduction",
-                imageUrl: nil,
-                imageStyle: "photo"
-            ),
-            twitter: PlatformContent(
-                content: "Big news! We just launched.",
-                hashtags: ["launch"],
-                charCount: 28,
-                imageSuggestion: "Eye-catching stat card with key metric",
-                imageUrl: nil,
-                imageStyle: "photo"
-            )
+            instagram: [
+                PlatformContent(
+                    content: "Just launched something amazing! Check it out.\n\n#launch #tech",
+                    hashtags: ["launch", "tech"],
+                    charCount: 55,
+                    imageSuggestion: "Modern retail store with self-checkout kiosks, bright lighting",
+                    imageUrl: nil,
+                    imageStyle: "photo"
+                ),
+                PlatformContent(
+                    content: "What if checkout took 10 seconds? Now it does.\n\n#retail #innovation",
+                    hashtags: ["retail", "innovation"],
+                    charCount: 60,
+                    imageSuggestion: "Futuristic checkout experience",
+                    imageUrl: nil,
+                    imageStyle: "photo"
+                )
+            ],
+            linkedin: [
+                PlatformContent(
+                    content: "Excited to announce our latest innovation in retail technology.",
+                    hashtags: ["innovation", "business"],
+                    charCount: 70,
+                    imageSuggestion: "Professional infographic showing checkout time reduction",
+                    imageUrl: nil,
+                    imageStyle: "photo"
+                ),
+                PlatformContent(
+                    content: "The future of retail isn't coming. It's already here.",
+                    hashtags: ["retail", "future"],
+                    charCount: 55,
+                    imageSuggestion: "Team celebrating product launch",
+                    imageUrl: nil,
+                    imageStyle: "photo"
+                )
+            ],
+            twitter: [
+                PlatformContent(
+                    content: "Big news! We just launched.",
+                    hashtags: ["launch"],
+                    charCount: 28,
+                    imageSuggestion: "Eye-catching stat card with key metric",
+                    imageUrl: nil,
+                    imageStyle: "photo"
+                ),
+                PlatformContent(
+                    content: "What if you never had to wait in line again?",
+                    hashtags: [],
+                    charCount: 45,
+                    imageSuggestion: "Before/after comparison of checkout lines",
+                    imageUrl: nil,
+                    imageStyle: "photo"
+                )
+            ]
         ),
         onGenerateNew: {}
     )
