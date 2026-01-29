@@ -1,17 +1,11 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-enum ViewMode: String, CaseIterable {
-    case card = "Card"
-    case preview = "Preview"
-}
-
 struct ContentResultsView: View {
     let content: GeneratedContent
     let onGenerateNew: () -> Void
 
     @State private var selectedVariation = 0
-    @State private var viewMode: ViewMode = .card
     @State private var appeared = false
 
     private var variationCount: Int {
@@ -31,15 +25,6 @@ struct ContentResultsView: View {
                         Text("Generated Content")
                             .font(.title2.bold())
                         Spacer()
-
-                        // View mode toggle
-                        Picker("View", selection: $viewMode) {
-                            ForEach(ViewMode.allCases, id: \.self) { mode in
-                                Text(mode.rawValue).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .frame(width: 150)
 
                         Button("Generate New") {
                             onGenerateNew()
@@ -85,15 +70,9 @@ struct ContentResultsView: View {
                 }
 
                 // Content grid
-                if viewMode == .card {
-                    cardView
-                        .opacity(appeared ? 1 : 0)
-                        .offset(y: appeared ? 0 : 20)
-                } else {
-                    previewView
-                        .opacity(appeared ? 1 : 0)
-                        .offset(y: appeared ? 0 : 20)
-                }
+                cardView
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 20)
             }
             .padding(.vertical)
             .animation(.easeInOut(duration: 0.2), value: selectedVariation)
@@ -135,28 +114,6 @@ struct ContentResultsView: View {
         .padding(.horizontal)
     }
 
-    private var previewView: some View {
-        VStack(spacing: 24) {
-            // Instagram Preview
-            InstagramPreview(
-                content: content.instagram[safe: selectedVariation] ?? content.instagram[0],
-                companyName: content.company
-            )
-
-            // LinkedIn Preview
-            LinkedInPreview(
-                content: content.linkedin[safe: selectedVariation] ?? content.linkedin[0],
-                companyName: content.company
-            )
-
-            // Twitter Preview
-            TwitterPreview(
-                content: content.twitter[safe: selectedVariation] ?? content.twitter[0],
-                companyName: content.company
-            )
-        }
-        .padding(.horizontal)
-    }
 }
 
 // Safe array access
