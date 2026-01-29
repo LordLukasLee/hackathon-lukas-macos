@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
     @EnvironmentObject var historyManager: HistoryManager
@@ -21,6 +22,20 @@ struct ContentView: View {
 
     private let baseURL = "http://localhost:8000"
 
+    private var backgroundImage: some View {
+        Group {
+            if let url = Bundle.module.url(forResource: "background", withExtension: "jpeg"),
+               let nsImage = NSImage(contentsOf: url) {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                Color.clear
+            }
+        }
+        .ignoresSafeArea()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -42,6 +57,7 @@ struct ContentView: View {
                 mainContent
             }
         }
+        .background(backgroundImage)
         .task {
             await loadInitialData()
         }
@@ -79,7 +95,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
-        .background(.bar)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var mainContent: some View {
@@ -103,6 +119,9 @@ struct ContentView: View {
                 }
             }
             .padding(24)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(16)
         }
     }
 
@@ -330,6 +349,7 @@ struct ContentView: View {
                 .font(.headline)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private func errorView(_ error: String) -> some View {
@@ -352,6 +372,7 @@ struct ContentView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     // MARK: - API Calls
@@ -486,11 +507,11 @@ struct CompanyCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(isSelected ? Color.accentColor.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+            .background(isSelected ? Color.accentColor.opacity(0.15) : Color(nsColor: .controlBackgroundColor))
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: isSelected ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -522,11 +543,11 @@ struct IdeaCard: View {
                 }
             }
             .padding()
-            .background(isSelected ? Color.green.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+            .background(isSelected ? Color.green.opacity(0.15) : Color(nsColor: .controlBackgroundColor))
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.green : Color.secondary.opacity(0.2), lineWidth: 1)
+                    .stroke(isSelected ? Color.green : Color.secondary.opacity(0.3), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -569,6 +590,9 @@ struct SkeletonLoadingView: View {
                 .padding(.horizontal)
             }
             .padding(.vertical)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(16)
         }
     }
 }

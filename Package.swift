@@ -7,7 +7,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "HackathonLukasClient",
-            path: "Sources"
+            path: "Sources",
+            resources: [.process("Resources")]
         ),
     ]
 )

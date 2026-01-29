@@ -36,7 +36,7 @@ struct ContentResultsView: View {
                             .font(.subheadline)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.accentColor.opacity(0.1))
+                            .background(Color.accentColor.opacity(0.15))
                             .cornerRadius(4)
                         Text(content.topic)
                             .font(.subheadline)
@@ -63,7 +63,7 @@ struct ContentResultsView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .background(Color.secondary.opacity(0.1))
+                    .background(Color(nsColor: .controlBackgroundColor))
                     .cornerRadius(8)
                     .padding(.horizontal)
                     .animation(.easeInOut(duration: 0.2), value: selectedVariation)
@@ -75,6 +75,10 @@ struct ContentResultsView: View {
                     .offset(y: appeared ? 0 : 20)
             }
             .padding(.vertical)
+            .padding(.horizontal, 8)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(16)
             .animation(.easeInOut(duration: 0.2), value: selectedVariation)
         }
         .onAppear {
