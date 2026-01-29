@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentResultsView: View {
     let content: GeneratedContent
@@ -56,13 +57,6 @@ struct ContentResultsView: View {
                         content: content.twitter,
                         showCharWarning: true
                     )
-
-                    PlatformCard(
-                        platform: "TikTok",
-                        icon: "music.note",
-                        color: .purple,
-                        content: content.tiktok
-                    )
                 }
                 .padding(.horizontal)
             }
@@ -79,7 +73,8 @@ struct PlatformCard: View {
     var showCharWarning: Bool = false
 
     @State private var copied = false
-    @State private var imageCopied = false
+    @State private var imageSaved = false
+    @State private var promptCopied = false
     @State private var showImageSuggestion = false
 
     var body: some View {
@@ -100,7 +95,58 @@ struct PlatformCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(nil)
 
-            // Image Suggestion Section
+            // Generated Image Section
+            if let imageUrl = content.imageUrl, let url = URL(string: imageUrl) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "photo.fill")
+                        Text("Generated Image")
+                        Spacer()
+                        Button(action: { saveImage(from: url) }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: imageSaved ? "checkmark" : "square.and.arrow.down")
+                                Text(imageSaved ? "Saved!" : "Save")
+                            }
+                            .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(imageSaved ? .green : nil)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.green)
+
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .frame(height: 150)
+                                Spacer()
+                            }
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 200)
+                                .cornerRadius(8)
+                        case .failure:
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle")
+                                Text("Failed to load image")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .frame(height: 100)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+            }
+
+            // Always show image suggestion when available (for copying to external image generators)
             if !content.imageSuggestion.isEmpty {
                 DisclosureGroup(isExpanded: $showImageSuggestion) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -110,20 +156,20 @@ struct PlatformCard: View {
                             .textSelection(.enabled)
                         Button(action: copyImageSuggestion) {
                             HStack(spacing: 4) {
-                                Image(systemName: imageCopied ? "checkmark" : "photo")
-                                Text(imageCopied ? "Copied!" : "Copy for AI image generator")
+                                Image(systemName: promptCopied ? "checkmark" : "photo")
+                                Text(promptCopied ? "Copied!" : "Copy for AI image generator")
                             }
                             .font(.caption)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .tint(imageCopied ? .green : .orange)
+                        .tint(promptCopied ? .green : .orange)
                     }
                     .padding(.top, 4)
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "photo.fill")
-                        Text("Visual Idea")
+                        Text("Image Prompt")
                     }
                     .font(.caption)
                     .foregroundStyle(.orange)
@@ -177,9 +223,39 @@ struct PlatformCard: View {
     private func copyImageSuggestion() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(content.imageSuggestion, forType: .string)
-        imageCopied = true
+        promptCopied = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            imageCopied = false
+            promptCopied = false
+        }
+    }
+
+    private func saveImage(from url: URL) {
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let image = NSImage(data: data) else { return }
+
+                let savePanel = NSSavePanel()
+                savePanel.allowedContentTypes = [.png, .jpeg]
+                savePanel.nameFieldStringValue = "\(platform.lowercased())_image.png"
+
+                if savePanel.runModal() == .OK, let saveUrl = savePanel.url {
+                    if let tiffData = image.tiffRepresentation,
+                       let bitmapRep = NSBitmapImageRep(data: tiffData),
+                       let pngData = bitmapRep.representation(using: .png, properties: [:])
+                    {
+                        try pngData.write(to: saveUrl)
+                        await MainActor.run {
+                            imageSaved = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                imageSaved = false
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("Error saving image: \(error)")
+            }
         }
     }
 }
@@ -193,25 +269,25 @@ struct PlatformCard: View {
                 content: "Just launched something amazing! Check it out.",
                 hashtags: ["launch", "tech"],
                 charCount: 45,
-                imageSuggestion: "Modern retail store with self-checkout kiosks, bright lighting"
+                imageSuggestion: "Modern retail store with self-checkout kiosks, bright lighting",
+                imageUrl: nil,
+                imageStyle: "photo"
             ),
             linkedin: PlatformContent(
                 content: "Excited to announce our latest innovation.",
                 hashtags: ["innovation", "business"],
                 charCount: 50,
-                imageSuggestion: "Professional infographic showing checkout time reduction"
+                imageSuggestion: "Professional infographic showing checkout time reduction",
+                imageUrl: nil,
+                imageStyle: "photo"
             ),
             twitter: PlatformContent(
                 content: "Big news! We just launched.",
                 hashtags: ["launch"],
                 charCount: 28,
-                imageSuggestion: "Eye-catching stat card with key metric"
-            ),
-            tiktok: PlatformContent(
-                content: "POV: You just discovered something cool",
-                hashtags: ["fyp", "tech"],
-                charCount: 40,
-                imageSuggestion: "Person reacting to fast checkout experience"
+                imageSuggestion: "Eye-catching stat card with key metric",
+                imageUrl: nil,
+                imageStyle: "photo"
             )
         ),
         onGenerateNew: {}
